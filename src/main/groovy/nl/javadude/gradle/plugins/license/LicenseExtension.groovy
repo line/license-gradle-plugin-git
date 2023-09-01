@@ -1,4 +1,19 @@
 /*
+ * Copyright 2023 LINE Corporation
+ *
+ * LINE Corporation licenses this file to you under the Apache License,
+ * version 2.0 (the "License"); you may not use this file except in compliance
+ * with the License. You may obtain a copy of the License at:
+ *
+ *   https://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations
+ * under the License.
+ */
+/*
  * Copyright (C)2011 - Jeroen van Erp <jeroen@javadude.nl>
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -13,12 +28,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package nl.javadude.gradle.plugins.license
 
 import nl.javadude.gradle.plugins.license.header.HeaderDefinitionBuilder
-import org.gradle.api.DomainObjectCollection
 import org.gradle.api.NamedDomainObjectContainer
-import org.gradle.api.tasks.SourceSet
+
 /**
  * Extension in the license namespace, which drives the License tasks.
  *
@@ -34,12 +49,6 @@ class LicenseExtension {
      * URI to header to apply to files
      */
     URI headerURI
-
-    /**
-     * Source sets to perform search on, will default to all sourceSets in the project
-     * @deprecated Is no longer used.
-     */
-    DomainObjectCollection<SourceSet> sourceSets
 
     /**
      * Path patterns to exclude while applying licenses or reporting missing licenses
@@ -73,6 +82,8 @@ class LicenseExtension {
     boolean useDefaultMappings
 
     boolean strictCheck
+
+    int inceptionYear
 
     /**
      * Additional header definitions

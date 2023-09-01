@@ -1,5 +1,19 @@
-/* License added by: GRADLE-LICENSE-PLUGIN
+/*
+ * Copyright 2023 LINE Corporation
  *
+ * LINE Corporation licenses this file to you under the Apache License,
+ * version 2.0 (the "License"); you may not use this file except in compliance
+ * with the License. You may obtain a copy of the License at:
+ *
+ *   https://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations
+ * under the License.
+ */
+/*
  * Copyright (C)2011 - Jeroen van Erp <jeroen@javadude.nl>
  * 
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -21,20 +35,20 @@ import org.junit.Before
 import org.junit.Test
 
 class LicenseExtensionTest {
-    LicenseExtension extension;
+    LicenseExtension extension
 
     @Before
-    public void setupProject() {
-        extension = new LicenseExtension();
+    void setupProject() {
+        extension = new LicenseExtension()
     }
 
     @Test
-    public void ableToConstruct() {
-        assert extension != null;
+    void ableToConstruct() {
+        assert extension != null
     }
 
     @Test
-    public void ableToAddSimpleMapping() {
+    void ableToAddSimpleMapping() {
         extension.mapping('js', 'JAVA')
         assert extension.internalMappings.containsKey('js')
 
@@ -43,7 +57,7 @@ class LicenseExtensionTest {
     }
 
     @Test
-    public void ableToAddMapMapping() {
+    void ableToAddMapMapping() {
         extension.mapping(['js':'JAVA', 'java':'JAVA'])
         extension.mapping groovy:'JAVA' 
         assert extension.internalMappings.containsKey('js')
@@ -52,7 +66,7 @@ class LicenseExtensionTest {
     }
 
     @Test
-    public void ableToAddClosureMapping() {
+    void ableToAddClosureMapping() {
         extension.mapping {
             put('js', 'JAVA')
             put 'java', 'JAVA'
@@ -64,11 +78,10 @@ class LicenseExtensionTest {
     }
 
     @Test
-    public void ableToAddGStringMapping() {
+    void ableToAddGStringMapping() {
         def var = 'VA'
         extension.mapping('js', "JA${var}")
         assert extension.internalMappings.containsKey('js')
         assert extension.internalMappings['js'] == 'JAVA'
     }
 }
-

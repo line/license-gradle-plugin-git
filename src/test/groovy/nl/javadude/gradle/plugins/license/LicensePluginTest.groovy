@@ -1,5 +1,19 @@
-/* License added by: GRADLE-LICENSE-PLUGIN
+/*
+ * Copyright 2023 LINE Corporation
  *
+ * LINE Corporation licenses this file to you under the Apache License,
+ * version 2.0 (the "License"); you may not use this file except in compliance
+ * with the License. You may obtain a copy of the License at:
+ *
+ *   https://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations
+ * under the License.
+ */
+/*
  * Copyright (C)2011 - Jeroen van Erp <jeroen@javadude.nl>
  * 
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -17,7 +31,6 @@
 
 package nl.javadude.gradle.plugins.license
 
-import com.hierynomus.gradle.license.LicenseBasePlugin
 import com.hierynomus.gradle.license.tasks.LicenseCheck
 import com.hierynomus.gradle.license.tasks.LicenseFormat
 import nl.javadude.gradle.plugins.license.header.HeaderDefinitionBuilder
@@ -35,39 +48,38 @@ class LicensePluginTest {
     Project project
 
     @Before
-    public void setupProject() {
+    void setupProject() {
         project = ProjectBuilder.builder().withProjectDir(new File("testProject")).build()
-        def plugin = project.plugins.apply(LicenseBasePlugin)
-//        plugin.configureSourceSetRule(JavaBasePlugin.class, "", { ss -> ss.allSource })
+        project.plugins.apply(LicensePlugin)
     }
 
     @Test
-    public void shouldAddLicenseTask() {
+    void shouldAddLicenseTask() {
         def tasks = project.tasks.withType(License.class).findAll { true }
         assertTrue tasks.isEmpty()
     }
 
     @Test
-    public void shouldFindTwoLicenseTaskPerSourceSet() {
+    void shouldFindTwoLicenseTaskPerSourceSet() {
         project.apply plugin: 'java'
         def tasks = project.tasks.withType(License.class).findAll { true }
         assertThat tasks.size(), is(4) // [Main,Test].count * 2
     }
 
     @Test
-    public void shouldFindMainLicenseTask() {
+    void shouldFindMainLicenseTask() {
         project.apply plugin: 'java'
         def task = project.tasks.getByName("licenseMain")
         assertThat task, instanceOf(License.class)
     }
 
     @Test
-    public void shouldPointToLicenseFileByDefault() {
+    void shouldPointToLicenseFileByDefault() {
         assertThat(project.license.header.name, is("LICENSE"))
     }
 
     @Test
-    public void extensionShouldHaveBooleanDocumentedDefaults() {
+    void extensionShouldHaveBooleanDocumentedDefaults() {
         assertThat project.license.ignoreFailures, is(false)
         assertThat project.license.dryRun, is(false)
         assertThat project.license.skipExistingHeaders, is(false)
@@ -76,19 +88,13 @@ class LicensePluginTest {
     }
 
     @Test
-    public void extensionShouldNotHaveSourceSets() {
-        assertThat project.license.sourceSets, is(notNullValue())
-        assertThat project.license.sourceSets.size(), equalTo(0)
-    }
-
-    @Test
-    public void shouldBeAbleToConfigureLicenseToOtherFile() {
+    void shouldBeAbleToConfigureLicenseToOtherFile() {
         project.license.header = project.file("OTHERLICENSE")
         assertThat(project.license.header.name, is("OTHERLICENSE"))
     }
     
     @Test
-    public void shouldConfigureLicenseForTasks() {
+    void shouldConfigureLicenseForTasks() {
         project.apply plugin: 'java'
         def task = project.tasks['licenseMain']
         
@@ -96,7 +102,7 @@ class LicensePluginTest {
     }
 
     @Test
-    public void shouldConfigureManuallyConfiguredTask() {
+    void shouldConfigureManuallyConfiguredTask() {
         project.apply plugin: 'java'
         def task = project.tasks.create('licenseManual', License)
         
@@ -104,7 +110,7 @@ class LicensePluginTest {
     }
 
     @Test
-    public void manualTaskShouldInheritFromExtension() {
+    void manualTaskShouldInheritFromExtension() {
         project.apply plugin: 'java'
         def task = project.tasks.create('licenseManual', License)
 
@@ -118,9 +124,9 @@ class LicensePluginTest {
     }
 
     @Test
-    public void shouldRunLicenseDuringCheck() {
+    void shouldRunLicenseDuringCheck() {
         project.apply plugin: 'java'
-        project.apply plugin: 'com.github.hierynomus.license'
+        project.apply plugin: 'com.linecorp.gradle.license-git'
         def task = project.tasks.create('licenseManual', License)
 
         Set<Task> dependsOn = project.tasks['check'].getDependsOn()
@@ -131,9 +137,9 @@ class LicensePluginTest {
     }
 
     @Test
-    public void shouldRunLicenseFromBaseTasks() {
+    void shouldRunLicenseFromBaseTasks() {
         project.apply plugin: 'java'
-        project.apply plugin: 'com.github.hierynomus.license'
+        project.apply plugin: 'com.linecorp.gradle.license-git'
         def task = project.tasks.create('licenseManual', LicenseCheck)
         def formatTask = project.tasks.create('licenseManualFormat', LicenseFormat)
 
@@ -155,7 +161,7 @@ class LicensePluginTest {
     }
     
     @Test
-    public void canAddMappingsAtMultipleLevels() {
+    void canAddMappingsAtMultipleLevels() {
         project.apply plugin: 'java'
 
         def task = project.tasks['licenseMain']

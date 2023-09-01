@@ -1,4 +1,3 @@
-// First, apply the publishing plugin
 buildscript {
   repositories {
     maven {
@@ -15,17 +14,16 @@ buildscript {
 plugins {
   id 'groovy'
   id 'idea'
-  id 'pl.allegro.tech.build.axion-release' version '1.11.0'
-  id 'com.gradle.plugin-publish' version '0.14.0'
+  id 'com.gradle.plugin-publish' version '1.1.0'
   id 'java-gradle-plugin'
-  id 'ru.vyarus.animalsniffer' version '1.5.3'
 }
 
-apply plugin: 'com.github.hierynomus.license'
+apply plugin: 'com.linecorp.gradle.license-git'
 
 defaultTasks 'build'
 
-group = 'com.hierynomus.gradle.plugins'
+version = '0.1.0'
+group = 'com.linecorp.gradle.license-git'
 
 sourceCompatibility = 1.8
 targetCompatibility = 1.8
@@ -37,66 +35,38 @@ repositories {
     google()
 }
 
-idea {
-    module {
-        downloadJavadoc = true
-        downloadSources = true
-    }
-}
-
-
-scmVersion {
-    tag {
-        prefix = 'v'
-        versionSeparator = ''
-    }
-    hooks {
-        pre 'fileUpdate', [file: 'README.adoc', pattern: { v, c -> /:license_plugin_version .*/}, replacement: { v, c -> ":license_plugin_version: $v" }]
-        pre 'commit'
-    }
-}
-
-project.version = scmVersion.version
-
-
 configurations.implementation.transitive = false
 
 sourceSets.create("integrationTest")
 
 dependencies {
-  signature 'org.codehaus.mojo.signature:java17:1.0@signature'
-
-    implementation "org.codehaus.plexus:plexus-utils:2.0.5"
     implementation "com.mycila.xmltool:xmltool:3.3"
     // Using implementation instead of groovy, so that it goes into the pom
-    implementation ('com.mycila:license-maven-plugin:3.0') {
-        exclude group: 'org.apache.maven', module: 'maven-plugin-api'
-        exclude group: 'org.apache.maven', module: 'maven-project'
-    }
-    implementation gradleApi()
+    implementation "com.mycila:license-maven-plugin:4.2.rc3"
+    implementation "com.mycila:license-maven-plugin-git:4.2.rc3"
+    implementation 'commons-io:commons-io:2.11.0'
 
-    def androidGradlePlugin = 'com.android.tools.build:gradle:4.1.0'
-    compileOnly androidGradlePlugin
-    testImplementation androidGradlePlugin
+    implementation gradleApi()
 
     integrationTestImplementation(project)
     integrationTestImplementation gradleTestKit()
-    integrationTestImplementation platform("org.spockframework:spock-bom:2.0-M5-groovy-3.0")
-    integrationTestImplementation 'com.netflix.nebula:nebula-test:8.1.0'
+    integrationTestImplementation platform("org.spockframework:spock-bom:2.1-groovy-3.0")
+    integrationTestImplementation 'com.netflix.nebula:nebula-test:10.3.0'
     integrationTestImplementation 'org.spockframework:spock-core'
     integrationTestImplementation 'org.spockframework:spock-junit4'
-    integrationTestImplementation 'junit:junit:4.13.1'
-    integrationTestImplementation 'com.google.guava:guava:17.0'
+    integrationTestImplementation 'junit:junit:4.13.2'
+    integrationTestImplementation 'com.google.guava:guava:31.1-jre'
 
     testImplementation gradleTestKit()
-    testImplementation 'com.netflix.nebula:nebula-test:8.1.0'
-    testImplementation platform("org.spockframework:spock-bom:2.0-M5-groovy-3.0")
+    testImplementation 'com.netflix.nebula:nebula-test:10.3.0'
+    testImplementation platform("org.spockframework:spock-bom:2.1-groovy-3.0")
     testImplementation 'org.spockframework:spock-core'
     testImplementation 'org.spockframework:spock-junit4'
-    testImplementation 'junit:junit:4.13.1'
-    testImplementation 'com.google.guava:guava:17.0'
+    testImplementation 'junit:junit:4.13.2'
+    testImplementation 'com.google.guava:guava:31.1-jre'
 }
 
+// TODO: Extract this files to it module.
 def integrationTestTask = tasks.register("integrationTest", Test) {
     description = 'Runs the integration tests.'
     group = "verification"
@@ -110,20 +80,20 @@ tasks.named('check') {
     it.dependsOn(integrationTestTask)
 }
 
-
 // This disables the pedantic doclint feature of JDK8
 if (JavaVersion.current().isJava8Compatible()) {
-    tasks.withType(Javadoc) {
+    tasks.withType(Javadoc).configureEach {
         options.addStringOption('Xdoclint:none', '-quiet')
     }
 }
 
-task sourcesJar(type: Jar) {
+tasks.register("sourcesJar", Jar.class) {
     from sourceSets.main.allSource
     classifier = 'sources'
 }
 
-task javadocJar(type: Jar, dependsOn: javadoc) {
+tasks.register("javadocJar", Jar.class) {
+    dependsOn = tasks.withType(Javadoc)
     classifier = 'javadoc'
     from javadoc.destinationDir
 }
@@ -132,7 +102,7 @@ license {
     ignoreFailures true
 }
 
-tasks.withType(Test).all { t ->
+tasks.withType(Test).configureEach { t ->
   t.afterSuite { descriptor, result ->
     def indicator = "\u001B[32m✓\u001b[0m"
     if (result.failedTestCount > 0) {
@@ -142,88 +112,16 @@ tasks.withType(Test).all { t ->
   }
 }
 
-def pomConfig = {
-    name project.name
-    description project.project_description
-    url project.project_url
-    inceptionYear '2011'
-
-    scm { url project.project_scm }
-
-    licenses {
-        license([:]) {
-            name 'The Apache Software License, Version 2.0'
-            url 'http://www.apache.org/licenses/LICENSE-2.0.txt'
-            distribution 'repo'
-        }
-    }
-
-    developers {
-        developer {
-            id 'hierynomus'
-            name 'Jeroen van Erp'
-            url 'http://www.javadude.nl/'
-            email 'jeroen@javadude.nl'
-            roles { role 'Developer' }
-        }
-    }
-
-    contributors {
-        contributor {
-            name 'Tim Harsch'
-            email 'harschware@yahoo.com'
-        }
-        contributor {
-            name 'Justin Ryan'
-            email 'jryan@netflix.com'
-        }
-    }
-}
-
 gradlePlugin {
+    website = "https://github.com/line/license-gradle-plugin"
+    vcsUrl = "https://github.com/line/license-gradle-plugin.git"
     plugins {
         licensePlugin {
-            id = "com.github.hierynomus.license"
+            id = "com.linecorp.gradle.license-git"
             implementationClass = "nl.javadude.gradle.plugins.license.LicensePlugin"
-        }
-
-        licenseBasePlugin {
-            id = "com.github.hierynomus.license-base"
-            implementationClass = "com.hierynomus.gradle.license.LicenseBasePlugin"
-        }
-
-        licenseReportPlugin {
-            id = "com.github.hierynomus.license-report"
-            implementationClass = "com.hierynomus.gradle.license.LicenseReportingPlugin"
-        }
-    }
-}
-
-pluginBundle {
-    website = "https://github.com/hierynomus/license-gradle-plugin"
-    vcsUrl = "https://github.com/hierynomus/license-gradle-plugin.git"
-    tags = ["gradle", "plugin", "license"]
-    plugins {
-        licensePlugin {
             displayName = "License plugin for Gradle"
             description = "Applies a header to files, typically a license"
+            tags.set(["gradle", "plugin", "license"])
         }
-        licenseBasePlugin {
-            displayName = "Base License plugin for Gradle"
-            description = "Base plugin to apply a header to files, typically a license"
-        }
-
-        licenseReportPlugin {
-            displayName = "License Report plugin for Gradle"
-            description = "Reports over licenses"
-            tags = [ "gradle", "plugin", "license", "report" ]
-        }
-    }
-}
-
-if (!System.env.containsKey("JENKINS_URL")) {
-    def javaVersion = System.properties['java.version']
-    if (JavaVersion.toVersion(javaVersion) != project.targetCompatibility) {
-//        throw new GradleException("Expected Java version ${project.targetCompatibility} but running with $javaVersion")
     }
 }

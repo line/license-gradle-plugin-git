@@ -1,4 +1,19 @@
-/**
+/*
+ * Copyright 2023 LINE Corporation
+ *
+ * LINE Corporation licenses this file to you under the Apache License,
+ * version 2.0 (the "License"); you may not use this file except in compliance
+ * with the License. You may obtain a copy of the License at:
+ *
+ *   https://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations
+ * under the License.
+ */
+/*
  * Copyright (C)2011 - Jeroen van Erp <jeroen@javadude.nl>
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -13,22 +28,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package nl.javadude.gradle.plugins.license.maven;
 
-import com.mycila.maven.plugin.license.Callback;
-import com.mycila.maven.plugin.license.HeaderSection;
-import com.mycila.maven.plugin.license.document.Document;
-import com.mycila.maven.plugin.license.document.DocumentPropertiesLoader;
-import com.mycila.maven.plugin.license.document.DocumentType;
-import com.mycila.maven.plugin.license.header.Header;
-import com.mycila.maven.plugin.license.header.HeaderSource.UrlHeaderSource;
-import com.mycila.maven.plugin.license.header.HeaderDefinition;
-import com.mycila.maven.plugin.license.header.HeaderType;
-import org.gradle.api.GradleException;
-import org.gradle.api.InvalidUserDataException;
-import org.gradle.api.file.FileCollection;
-import org.gradle.api.logging.Logger;
-import org.gradle.api.logging.Logging;
+import static com.mycila.maven.plugin.license.document.DocumentType.defaultMapping;
+import static com.mycila.maven.plugin.license.git.CopyrightRangeProvider.COPYRIGHT_YEARS_KEY;
+import static com.mycila.maven.plugin.license.git.CopyrightRangeProvider.INCEPTION_YEAR_KEY;
 
 import java.io.File;
 import java.io.IOException;
@@ -39,9 +44,10 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
-import java.util.Properties;
+import java.util.ServiceLoader;
 import java.util.Set;
 import java.util.concurrent.CompletionService;
 import java.util.concurrent.ExecutionException;
@@ -49,7 +55,25 @@ import java.util.concurrent.ExecutorCompletionService;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
-import static com.mycila.maven.plugin.license.document.DocumentType.defaultMapping;
+import org.apache.maven.plugin.MojoExecutionException;
+import org.apache.maven.plugin.MojoFailureException;
+import org.gradle.api.GradleException;
+import org.gradle.api.InvalidUserDataException;
+import org.gradle.api.file.FileCollection;
+import org.gradle.api.logging.Logger;
+import org.gradle.api.logging.Logging;
+
+import com.mycila.maven.plugin.license.Callback;
+import com.mycila.maven.plugin.license.HeaderSection;
+import com.mycila.maven.plugin.license.LicenseCheckMojo;
+import com.mycila.maven.plugin.license.PropertiesProvider;
+import com.mycila.maven.plugin.license.document.Document;
+import com.mycila.maven.plugin.license.document.DocumentPropertiesLoader;
+import com.mycila.maven.plugin.license.document.DocumentType;
+import com.mycila.maven.plugin.license.header.Header;
+import com.mycila.maven.plugin.license.header.HeaderDefinition;
+import com.mycila.maven.plugin.license.header.HeaderSource.UrlHeaderSource;
+import com.mycila.maven.plugin.license.header.HeaderType;
 
 public class AbstractLicenseMojo {
     static Logger logger = Logging.getLogger(AbstractLicenseMojo.class);
@@ -67,20 +91,22 @@ public class AbstractLicenseMojo {
     protected Map<String, String> mapping;
 
     boolean dryRun;
-    boolean skipExistingHeaders;
     boolean useDefaultMappings;
     boolean strictCheck;
     URI header;
     FileCollection source;
+    int inceptionYear;
+    File baseDir;
 
     public AbstractLicenseMojo(Collection<File> validHeaders, File rootDir, Map<String, String> initial,
-                    boolean dryRun, boolean skipExistingHeaders, boolean useDefaultMappings, boolean strictCheck,
-                    URI header, FileCollection source, Map<String, String> mapping, String encoding, List<HeaderDefinition> headerDefinitions) {
+                               boolean dryRun, boolean useDefaultMappings,
+                               boolean strictCheck, URI header, FileCollection source,
+                               Map<String, String> mapping, String encoding,
+                               List<HeaderDefinition> headerDefinitions, int inceptionYear, File baseDir) {
         this.validHeaders = validHeaders;
         this.rootDir = rootDir;
         this.initial = initial;
         this.dryRun = dryRun;
-        this.skipExistingHeaders = skipExistingHeaders;
         this.useDefaultMappings = useDefaultMappings;
         this.strictCheck = strictCheck;
         this.header = header;
@@ -88,6 +114,8 @@ public class AbstractLicenseMojo {
         this.mapping = mapping;
         this.encoding = encoding;
         this.headerDefinitions = headerDefinitions;
+        this.inceptionYear = inceptionYear;
+        this.baseDir = baseDir;
     }
 
     protected void execute(final Callback callback) throws MalformedURLException, IOException {
@@ -104,20 +132,63 @@ public class AbstractLicenseMojo {
             validHeaders.add(new Header(new UrlHeaderSource(validHeader.toURI().toURL(), encoding), headerSections));
         }
 
+        final List<PropertiesProvider> propertiesProviders = new LinkedList<>();
+        for (final PropertiesProvider provider : ServiceLoader.load(PropertiesProvider.class,
+                                                                    Thread.currentThread()
+                                                                          .getContextClassLoader())) {
+            provider.init(new com.mycila.maven.plugin.license.AbstractLicenseMojo() {
+                {
+                    defaultBasedir = baseDir;
+                }
+
+                @Override
+                public void execute() throws MojoExecutionException, MojoFailureException {
+                }
+            }, props);
+            propertiesProviders.add(provider);
+        }
         final DocumentPropertiesLoader documentPropertiesLoader = new DocumentPropertiesLoader() {
             @Override
-            public Properties load(Document d) {
-                Properties properties = new Properties();
+            public Map<String, String> load(Document d) {
+                Map<String, String> properties = new HashMap<>();
 
                 for (String key : props.keySet()) {
                     properties.put(key, String.valueOf(props.get(key)));
                 }
 
                 properties.put("file.name", d.getFile().getName());
+                if (inceptionYear == 0 &&
+                    (h.asOneLineString().contains(toTemplateString(INCEPTION_YEAR_KEY)) ||
+                     h.asOneLineString().contains(toTemplateString(COPYRIGHT_YEARS_KEY)))) {
+                    throw new IllegalStateException("inceptionYear should be provided");
+                }
+                properties.put(INCEPTION_YEAR_KEY, Integer.toString(inceptionYear));
 
+                for (PropertiesProvider provider : propertiesProviders) {
+                    try {
+                        final Map<String, String> providerProperties = provider.adjustProperties(
+                                new LicenseCheckMojo(), properties, d);
+                        logger.debug("provider: " + provider.getClass() + " brought new properties\n"
+                                     + providerProperties);
+                        for (Map.Entry<String, String> entry : providerProperties.entrySet()) {
+                            if (entry.getValue() != null) {
+                                properties.put(entry.getKey(), entry.getValue());
+                            } else {
+                                properties.remove(entry.getKey());
+                            }
+                        }
+                    } catch (Exception e) {
+                        logger.warn("failure occured while calling " + provider.getClass(), e);
+                    }
+                }
                 return properties;
             }
+
+            private String toTemplateString(String key) {
+                return "${" + key + '}';
+            }
         };
+
         Map<String, HeaderDefinition> definitions = buildHeaderDefinitions();
         final DocumentFactory documentFactory = new DocumentFactory(rootDir, buildMapping(definitions), definitions,
                         encoding, keywords, documentPropertiesLoader);

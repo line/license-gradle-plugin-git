@@ -1,4 +1,19 @@
 /*
+ * Copyright 2023 LINE Corporation
+ *
+ * LINE Corporation licenses this file to you under the Apache License,
+ * version 2.0 (the "License"); you may not use this file except in compliance
+ * with the License. You may obtain a copy of the License at:
+ *
+ *   https://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations
+ * under the License.
+ */
+/*
  * Copyright (C)2011 - Jeroen van Erp <jeroen@javadude.nl>
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -13,6 +28,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package nl.javadude.gradle.plugins.license
 
 import com.mycila.maven.plugin.license.header.HeaderDefinition
@@ -104,10 +120,10 @@ class License extends SourceTask implements VerificationTask {
     @Nested
     NamedDomainObjectContainer<HeaderDefinitionBuilder> headerDefinitions
 
+    @Input int inceptionYear;
+
     @Inject
-    @Deprecated
-    License() {
-    }
+    License() {}
 
     License(boolean check) {
         this.check = check
@@ -135,14 +151,24 @@ class License extends SourceTask implements VerificationTask {
 
         URI uri = resolveURI()
 
-        new AbstractLicenseMojo(validHeaders, getProject().rootDir, initial, isDryRun(), isSkipExistingHeaders(), isUseDefaultMappings(), isStrictCheck(), uri, source, combinedMappings, getEncoding(), buildHeaderDefinitions())
-            .execute(callback)
+        int inceptionYear = getInceptionYear()
+        if (inceptionYear == 0) {
+            Object inceptionYearProperty = project.findProperty("inceptionYear")
+            if (inceptionYearProperty != null) {
+                inceptionYear = Integer.parseInt(inceptionYearProperty.toString())
+            }
+        }
+
+        new AbstractLicenseMojo(validHeaders, getProject().rootDir, initial, isDryRun(), isUseDefaultMappings(),
+                isStrictCheck(), uri, source, combinedMappings, getEncoding(), buildHeaderDefinitions(),
+                inceptionYear, getProject().rootDir)
+                .execute(callback)
 
         altered = callback.getAffected()
         didWork = !altered.isEmpty()
 
         if (!isIgnoreFailures() && callback.hadFailure()) {
-            throw new GradleException("License violations were found: ${callback.affected.join(',')}}")
+            throw new GradleException("License violations were found: ${callback.affected.join(',')}")
         }
 
     }

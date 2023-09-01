@@ -1,5 +1,19 @@
-/* License added by: GRADLE-LICENSE-PLUGIN
+/*
+ * Copyright 2023 LINE Corporation
  *
+ * LINE Corporation licenses this file to you under the Apache License,
+ * version 2.0 (the "License"); you may not use this file except in compliance
+ * with the License. You may obtain a copy of the License at:
+ *
+ *   https://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations
+ * under the License.
+ */
+/*
  * Copyright (C)2011 - Jeroen van Erp <jeroen@javadude.nl>
  * 
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -17,30 +31,20 @@
 
 package com.hierynomus.gradle.license
 
-import com.google.common.collect.Iterables
 import com.google.common.io.Files
-import com.hierynomus.gradle.license.LicenseBasePlugin
 import nebula.test.IntegrationSpec
 import nebula.test.functional.ExecutionResult
-import nl.javadude.gradle.plugins.license.header.HeaderDefinitionBuilder
-import org.gradle.api.Project
-import org.gradle.testfixtures.ProjectBuilder
-import org.gradle.testkit.runner.GradleRunner
-import org.junit.After
-import org.junit.Before
-import org.junit.Test
-import spock.lang.Specification
-import spock.lang.TempDir
 
 class LicenseIntegrationTest extends IntegrationSpec {
     File license
+
     def setup() {
         buildFile << """
     plugins {
         id "java"
     }
     
-    apply plugin: "com.github.hierynomus.license-base"
+    apply plugin: "com.linecorp.gradle.license-git"
     
     license {
         ignoreFailures = true
@@ -228,7 +232,7 @@ license.excludes(["**/test.properties"])
         def contents = propFile.text
 
         when:
-        ExecutionResult r = runTasksSuccessfully("licenseFormatMain")
+        runTasksSuccessfully("licenseFormatMain")
 
         then:
         propFile.text == '''#
@@ -245,11 +249,49 @@ key2 = value2
         File javaFile = createJavaFile()
 
         when:
+        runTasksSuccessfully("licenseFormatMain")
+
+        then:
+        javaFile.text == '''/*
+ * This is a sample license created in ${year}
+ */
+public class Test {
+        static { System.out.println("Hello") }
+}
+'''
+    }
+
+    def "should fail if inceptionYear is needed but not provided"() {
+        when:
+        File javaFile = createJavaFile()
+        license = createLicenseFileWithInceptionYear()
+        ExecutionResult r = runTasksWithFailure("licenseFormatMain")
+
+        then:
+        r.failure.cause.cause instanceof IllegalStateException
+    }
+
+    def "inceptionYear should be applied when set"() {
+        when:
+        File javaFile = createJavaFile()
+        buildFile.text = """
+    plugins {
+        id "java"
+    }
+    
+    apply plugin: "com.linecorp.gradle.license-git"
+    
+    license {
+        ignoreFailures = true
+        inceptionYear = 1996
+    }
+"""
+        license = createLicenseFileWithInceptionYear()
         ExecutionResult r = runTasksSuccessfully("licenseFormatMain")
 
         then:
-        javaFile.text == '''/**
- * This is a sample license created in ${year}
+        javaFile.text == '''/*
+ * This is a sample license created in 1996
  */
 public class Test {
         static { System.out.println("Hello") }
@@ -277,7 +319,7 @@ tasks.licenseFormatMain.mapping("java", "bohemian_rhapsody")
 """
 
         when:
-        ExecutionResult r = runTasksSuccessfully("licenseFormatMain")
+        runTasksSuccessfully("licenseFormatMain")
 
         then:
         javaFile.text == '''Mama, just killed a man,
@@ -323,23 +365,22 @@ tasks.licenseMain {
         r.standardOutput.contains("Missing header in: src/main/resources/test.properties")
     }
 
-//    def "should apply license from classpath"() {
-//        given:
-//        File propFile = createPropertiesFile()
-//        buildFile << """
-//tasks.licenseFormatMain.headerURI = com.hierynomus.gradle.license.tasks.LicenseCheck.class.getResource("/license/silly.txt").toURI()
-//"""
-//
-//
-//        when:
-//        ExecutionResult r = runTasksSuccessfully("licenseFormatMain")
-//
-//        then:
-//        propFile.text.startsWith("# It's mine, I tell you, mine!")
-//    }
-//
+    def "should apply license from classpath"() {
+        given:
+        File propFile = createPropertiesFile()
+        buildFile << """
+tasks.licenseFormatMain.headerURI = com.hierynomus.gradle.license.tasks.LicenseCheck.class.getClassLoader().getResource("license/silly.txt").toURI()
+"""
 
-     File createLicenseFile(String content) {
+
+        when:
+        runTasksSuccessfully("licenseFormatMain")
+
+        then:
+        propFile.text.contains("# It’s mine, I tell you, mine!")
+    }
+
+    File createLicenseFile(String content) {
         File file = file("LICENSE")
         file.text = content
         file
@@ -347,6 +388,10 @@ tasks.licenseMain {
 
     File createLicenseFile() {
         createLicenseFile '''This is a sample license created in ${year}'''
+    }
+
+    File createLicenseFileWithInceptionYear() {
+        createLicenseFile '''This is a sample license created in ${project.inceptionYear}'''
     }
 
     File createJavaFile() {
@@ -364,7 +409,7 @@ keyB = valueB
 '''
     }
 
-    public File createFreemarkerShellFile() {
+    File createFreemarkerShellFile() {
         File file = file("src/main/resources/prop.sh.ftl")
         file << '''#!/bin/bash
 echo "Hello world!"
@@ -373,21 +418,19 @@ echo "Hello world!"
 
     File createPropertiesFile() {
         def f = file("src/main/resources/test.properties")
-        Files.createParentDirs(f);
+        Files.createParentDirs(f)
         f << '''key1 = value1
 key2 = value2
 '''
     }
 
-    public File createPropertiesFileWithHeader() {
+    File createPropertiesFileWithHeader() {
         File file = new File(projectDir, "src/main/resources/header.properties")
-        Files.createParentDirs(file);
+        Files.createParentDirs(file)
         file << '''# This is a sample license created in 2012
 key3 = value3
 key4 = value4
 '''
         file
     }
-
 }
-
