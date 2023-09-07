@@ -99,6 +99,7 @@ tasks.register("javadocJar", Jar.class) {
 }
 
 license {
+    header = project.rootProject.file("settings/license_template/LICENSE")
     ignoreFailures true
 }
 
