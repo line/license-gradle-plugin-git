@@ -85,7 +85,7 @@ class LicensePlugin implements Plugin<Project> {
         final LicenseExtension extension = project.extensions.create(LICENSE_TASK_BASE_NAME, LicenseExtension)
         extension.with {
             // Default for extension
-            header = project.rootProject.file("LICENSE")
+            header = project.rootProject.file("settings/license_template/LICENSE")
             headerURI = null
             ignoreFailures = false
             dryRun = false

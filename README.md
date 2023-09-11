@@ -15,7 +15,7 @@ plugins {
     id 'com.linecorp.gradle.license-git' version '0.1.0'
 }
 ```
-Create a file named `LICENSE` in the root directory of your project and place the copyright to apply:
+Create a file named `LICENSE` under the `{Project Root}/settings/license_template` directory of your project and place the copyright to apply:
 ```
 Copyright 2023 LY Corporation
 Licensed under the Apache License ...
