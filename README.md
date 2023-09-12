@@ -4,6 +4,8 @@ correctly applied. In the template, you can specify pre-defined properties for y
 creation year, last modified year or the combination of them using Git history.
 This plugin is based on the original [license-maven-plugin-git](https://github.com/mathieucarbou/license-maven-plugin/tree/master/license-maven-plugin-git) for Maven.
 
+:warning: This is not intended to and do not constitute legal advice of any circumstances.
+
 ## Usage
 The plugin provides the following tasks:
 - `licenseFormat`: Updates the copyright in your project files using a template.
