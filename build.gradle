@@ -113,15 +113,15 @@ tasks.withType(Test).configureEach { t ->
 }
 
 gradlePlugin {
-    website = "https://github.com/line/license-gradle-plugin"
-    vcsUrl = "https://github.com/line/license-gradle-plugin.git"
+    website = "https://github.com/line/license-gradle-plugin-git"
+    vcsUrl = "https://github.com/line/license-gradle-plugin-git.git"
     plugins {
         licensePlugin {
             id = "com.linecorp.gradle.license-git"
             implementationClass = "nl.javadude.gradle.plugins.license.LicensePlugin"
             displayName = "License plugin for Gradle"
-            description = "Applies a header to files, typically a license"
-            tags.set(["gradle", "plugin", "license"])
+            description = "Applies a header to files, typically a license. This plugin supports git based configurations."
+            tags.set(["gradle", "plugin", "license", "git"])
         }
     }
 }
