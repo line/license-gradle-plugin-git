@@ -42,7 +42,7 @@ sourceSets.create("integrationTest")
 dependencies {
     implementation "com.mycila.xmltool:xmltool:3.3"
     // Using implementation instead of groovy, so that it goes into the pom
-    implementation "com.mycila:license-maven-plugin:4.2.rc3"
+    implementation "com.mycila:license-maven-plugin:4.3"
     implementation "com.mycila:license-maven-plugin-git:4.2.rc3"
     implementation 'commons-io:commons-io:2.11.0'
 
