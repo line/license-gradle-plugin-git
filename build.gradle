@@ -121,7 +121,7 @@ gradlePlugin {
             implementationClass = "nl.javadude.gradle.plugins.license.LicensePlugin"
             displayName = "License plugin for Gradle"
             description = "Applies a header to files, typically a license. This plugin supports git based configurations."
-            tags.set(["gradle", "plugin", "license", "git"])
+            tags.set(["license", "git"])
         }
     }
 }
