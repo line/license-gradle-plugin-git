@@ -10,9 +10,10 @@ repositories {
 configurations.api.transitive = false
 
 dependencies {
-    implementation "com.mycila.xmltool:xmltool:3.3"
-    implementation "com.mycila:license-maven-plugin:4.2.rc3"
-    implementation "com.mycila:license-maven-plugin-git:4.2.rc3"
+    implementation "com.mycila:license-maven-plugin:4.2"
+    implementation "com.mycila:license-maven-plugin-git:4.2"
+    implementation "org.apache.maven:maven-core:3.9.4"
+    implementation "commons-io:commons-io:2.11.0"
     implementation gradleApi()
 }
 
